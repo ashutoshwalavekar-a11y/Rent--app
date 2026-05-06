@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rent Manager</title>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface2: #F0EFE9;
+  --primary: #1A1A2E;
+  --accent: #C8A96E;
+  --accent2: #E8D5A3;
+  --text: #1A1A2E;
+  --text2: #6B6B7A;
+  --text3: #9E9EAB;
+  --border: #E2E0D8;
+  --success: #2D7A4F;
+  --danger: #C0392B;
+  --shadow: 0 4px 24px rgba(26,26,46,0.08);
+  --shadow-lg: 0 12px 48px rgba(26,26,46,0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: all 0.28s cubic-bezier(0.4,0,0.2,1);
+}
+
+[data-theme="dark"] {
+  --bg: #12121C;
+  --surface: #1E1E2E;
+  --surface2: #252538;
+  --primary: #F0EFE9;
+  --accent: #C8A96E;
+  --accent2: #2A2518;
+  --text: #F0EFE9;
+  --text2: #A8A8B8;
+  --text3: #686878;
+  --border: #2E2E42;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.4);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--primary);
+  color: #F0EFE9;
+  padding: 18px 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+}
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.header-title span { color: var(--accent); }
+.header-actions { display:flex; gap:12px; align-items:center; }
+.icon-btn {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #F0EFE9;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 18px;
+  transition: var(--transition);
+}
+.icon-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+
+/* ── NAV ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+}
+.nav-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 6px 0;
+  border: none; background: none;
+  color: var(--text3);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 22px; line-height:1; transition: var(--transition); }
+.nav-item.active .nav-icon { transform: scale(1.1); }
+
+/* ── PAGES ── */
+.page { display:none; padding: 20px 16px 100px; animation: fadeIn 0.3s ease; }
+.page.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.card-header {
+  display: flex; align-items:center; gap:10px;
+  margin-bottom: 16px;
+}
+.card-icon {
+  width: 36px; height: 36px;
+  background: var(--accent2);
+  border-radius: 10px;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.card-subtitle { font-size: 12px; color: var(--text3); margin-top:2px; }
+
+/* ── FORM ── */
+.form-group { margin-bottom: 14px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.form-input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  transition: var(--transition);
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(200,169,110,0.15);
+}
+.form-input::placeholder { color: var(--text3); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ── CALC BOX ── */
+.calc-result {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+}
+.calc-row {
+  display: flex; justify-content:space-between; align-items:center;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.calc-row:last-child { border-bottom: none; }
+.calc-row.total {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  padding-top: 14px;
+}
+.calc-row.total .amount { color: var(--accent); }
+.amount { font-weight: 600; color: var(--text); }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex; align-items:center; justify-content:center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #F0EFE9;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); opacity:0.92; }
+.btn-accent {
+  background: var(--accent);
+  color: var(--primary);
+}
+.btn-accent:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(200,169,110,0.35); }
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover { background: var(--surface2); }
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+.btn-success:hover { transform:translateY(-2px); box-shadow: 0 8px 24px rgba(45,122,79,0.3); }
+.btn-sm {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 13px;
+}
+.btn-group { display:flex; gap:10px; flex-wrap:wrap; }
+.btn-group .btn { flex:1; min-width:120px; }
+
+/* ── BADGE ── */
+.badge {
+  display: inline-flex; align-items:center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-gold { background: var(--accent2); color: var(--accent); border: 1px solid var(--accent); }
+
+/* ── HISTORY ITEM ── */
+.history-item {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex; justify-content:space-between; align-items:center;
+  transition: var(--transition);
+  box-shadow: var(--shadow);
+}
+.history-item:hover { transform: translateX(4px); border-color: var(--accent); }
+.history-name { font-weight: 600; font-size: 15px; }
+.history-date { font-size: 12px; color: var(--text3); margin-top:3px; }
+.history-amount { font-size: 18px; font-weight: 700; color: var(--accent); }
+.history-empty {
+  text-align: center; padding: 48px 20px;
+  color: var(--text3);
+}
+.history-empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.history-empty p { font-size: 14px; line-height: 1.6; }
+
+/* ── SETTINGS ── */
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  margin: 20px 0 10px;
+}
+.settings-row {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  display: flex; align-items:center; justify-content:space-between;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.settings-row:hover { border-color: var(--accent); }
+.settings-row-left { display:flex; align-items:center; gap:12px; }
+.settings-row-icon { font-size: 20px; }
+.settings-row-label { font-size: 14px; font-weight: 500; }
+.settings-row-value { font-size: 13px; color: var(--text3); max-width: 140px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ── TOGGLE ── */
+.toggle {
+  width:46px; height:26px;
+  background: var(--border);
+  border-radius:13px;
+  position:relative;
+  cursor:pointer;
+  transition:var(--transition);
+  flex-shrink:0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content:'';
+  position:absolute;
+  width:20px; height:20px;
+  background:#fff;
+  border-radius:50%;
+  top:3px; left:3px;
+  transition:var(--transition);
+  box-shadow:0 2px 4px rgba(0,0,0,0.2);
+}
+.toggle.on::after { left:23px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition: opacity 0.3s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background: var(--surface);
+  width:100%; max-width:480px;
+  margin: 0 auto;
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-handle {
+  width:40px; height:4px;
+  background: var(--border);
+  border-radius:2px;
+  margin: 0 auto 20px;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* ── INVOICE PREVIEW ── */
+.invoice-preview {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 24px;
+  color: #1A1A2E;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid #E2E0D8;
+}
+.inv-header {
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #1A1A2E;
+  margin-bottom: 16px;
+}
+.inv-property {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1A1A2E;
+}
+.inv-owner { font-size: 13px; color: #6B6B7A; margin-top: 4px; }
+.inv-badge {
+  display:inline-block;
+  background: #1A1A2E;
+  color: #C8A96E;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+.inv-meta {
+  display:flex; justify-content:space-between;
+  font-size: 13px; color: #6B6B7A;
+  margin-bottom: 16px;
+}
+.inv-meta strong { color: #1A1A2E; }
+.inv-table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+.inv-table th {
+  background: #1A1A2E; color: #C8A96E;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align:left;
+  letter-spacing: 0.5px;
+}
+.inv-table td {
+  padding: 10px 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #E2E0D8;
+  color: #1A1A2E;
+}
+.inv-table tr:nth-child(even) td { background: #F9F8F4; }
+.inv-total-row td {
+  background: #C8A96E !important;
+  color: #1A1A2E !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  border-bottom: none !important;
+}
+.inv-qr-section {
+  text-align:center;
+  padding: 16px 0 0;
+  border-top: 1px dashed #C8A96E;
+  margin-top: 4px;
+}
+.inv-qr-label { font-size: 12px; color: #6B6B7A; margin-bottom: 10px; font-weight: 500; }
+.inv-qr-img { display:inline-block; border:3px solid #1A1A2E; border-radius:8px; padding:6px; background:#fff; }
+.inv-upi { font-size: 12px; color: #6B6B7A; margin-top: 8px; }
+.inv-footer {
+  text-align:center;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #E2E0D8;
+}
+.inv-thanks {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  color: #1A1A2E;
+  font-weight: 600;
+}
+.inv-sub { font-size: 11px; color: #9E9EAB; margin-top: 4px; }
+
+/* ── LOGO UPLOAD ── */
+.logo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--bg);
+}
+.logo-upload-area:hover { border-color: var(--accent); background: var(--accent2); }
+.logo-preview { width:80px; height:80px; border-radius:50%; object-fit:cover; margin: 0 auto 8px; display:block; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 90px; left:50%; transform: translateX(-50%) translateY(20px);
+  background: var(--primary);
+  color: #F0EFE9;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 300;
+  opacity:0;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity:1; transform: translateX(-50%) translateY(0); }
+
+/* ── WELCOME BANNER ── */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--primary) 0%, #2D2D4E 100%);
+  border-radius: var(--radius);
+  padding: 20px;
+  color: #F0EFE9;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-banner::before {
+  content:'';
+  position:absolute; top:-20px; right:-20px;
+  width:100px; height:100px;
+  background: var(--accent);
+  border-radius:50%;
+  opacity:0.12;
+}
+.welcome-banner::after {
+  content:'';
+  position:absolute; bottom:-30px; right:30px;
+  width:70px; height:70px;
+  background: var(--accent);
+  border-radius:50%;
+  opacity:0.08;
+}
+.wb-greeting { font-size: 13px; color: rgba(240,239,233,0.65); margin-bottom: 4px; }
+.wb-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #F0EFE9;
+  margin-bottom: 12px;
+}
+.wb-stats { display:flex; gap:16px; }
+.wb-stat { text-align:left; }
+.wb-stat-val { font-size: 22px; font-weight: 700; color: var(--accent); line-height:1; }
+.wb-stat-label { font-size: 11px; color: rgba(240,239,233,0.55); margin-top:3px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── SPINNER ── */
+@keyframes spin { to{transform:rotate(360deg)} }
+.spinner {
+  width:18px; height:18px;
+  border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation: spin 0.7s linear infinite;
+  display:inline-block;
+}
+
+/* ── NUMBER ── */
+input[type=number]::-webkit-inner-spin-button { opacity:1; }
+
+/* hidden qr canvas */
+#qr-hidden { position:absolute; left:-9999px; top:-9999px; }
+
+/* ── SHARE OPTIONS ── */
+.share-option-btn {
+  width:100%;
+  display:flex; align-items:center; gap:14px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  font-family: 'DM Sans', sans-serif;
+}
+.share-option-btn:hover, .share-option-btn:active {
+  border-color: var(--accent);
+  transform: translateX(3px);
+  background: var(--surface);
+}
+.share-option-icon {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  display: flex; align-items:center; justify-content:center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.share-option-text { flex:1; }
+.share-option-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.share-option-sub { font-size: 12px; color: var(--text3); margin-top:2px; }
+.share-option-arrow { font-size: 22px; color: var(--text3); font-weight: 300; }
+</style>
+</head>
+<body data-theme="light">
+
+<!-- APP HEADER -->
+<header class="app-header">
+  <div class="header-title">Rent<span>Manager</span></div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="toggleDark()" title="Toggle dark mode" id="darkBtn">🌙</button>
+    <button class="icon-btn" onclick="showPage('settings')" title="Settings">⚙️</button>
+  </div>
+</header>
+
+<!-- PAGES -->
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="welcome-banner" id="welcomeBanner">
+    <div class="wb-greeting">Good day 👋</div>
+    <div class="wb-name" id="wbOwnerName">Welcome Back</div>
+    <div class="wb-stats">
+      <div class="wb-stat">
+        <div class="wb-stat-val" id="wbInvoiceCount">0</div>
+        <div class="wb-stat-label">Invoices</div>
+      </div>
+      <div class="wb-stat">
+        <div class="wb-stat-val" id="wbThisMonth">₹0</div>
+        <div class="wb-stat-label">This Month</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tenant Details -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">👤</div>
+      <div>
+        <div class="card-title">Tenant Details</div>
+        <div class="card-subtitle">Fill in the tenant information</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Tenant Name</label>
+      <input type="text" class="form-input" id="tenantName" placeholder="e.g. Rahul Sharma" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Billing Month</label>
+      <input type="month" class="form-input" id="billMonth">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Room Rent (₹)</label>
+      <input type="number" class="form-input" id="roomRent" placeholder="e.g. 8000" min="0">
+    </div>
+  </div>
+
+  <!-- Electricity -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">⚡</div>
+      <div>
+        <div class="card-title">Electricity</div>
+        <div class="card-subtitle">Enter meter readings</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Previous Units</label>
+        <input type="number" class="form-input" id="prevUnits" placeholder="e.g. 1200" min="0" oninput="autoCalc()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current Units</label>
+        <input type="number" class="form-input" id="currUnits" placeholder="e.g. 1350" min="0" oninput="autoCalc()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Units Consumed</label>
+      <input type="number" class="form-input" id="unitsConsumed" placeholder="Auto-calculated or enter manually" min="0" oninput="onManualUnits()">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Rate per Unit (₹)</label>
+      <input type="number" class="form-input" id="ratePerUnit" placeholder="e.g. 8" min="0" step="0.01" oninput="updateCalc()">
+    </div>
+
+    <!-- Results -->
+    <div class="calc-result" id="calcResult" style="display:none">
+      <div class="calc-row">
+        <span>🏠 Room Rent</span>
+        <span class="amount" id="rRoomRent">₹0</span>
+      </div>
+      <div class="calc-row">
+        <span>⚡ Units (<span id="rUnits">0</span> × ₹<span id="rRate">0</span>)</span>
+        <span class="amount" id="rElec">₹0</span>
+      </div>
+      <div class="calc-row total">
+        <span>Total Payable</span>
+        <span class="amount" id="rTotal">₹0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon">📝</div>
+      <div><div class="card-title">Additional Notes</div></div>
+    </div>
+    <textarea class="form-input" id="invoiceNotes" rows="2" placeholder="Any extra charges, remarks..." style="resize:none; min-height:70px; line-height:1.5"></textarea>
+    <div class="form-group" style="margin-top:12px; margin-bottom:0">
+      <label class="form-label">Extra Charges (₹)</label>
+      <input type="number" class="form-input" id="extraCharges" placeholder="e.g. 200 for maintenance" min="0" oninput="updateCalc()">
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="card">
+    <button class="btn btn-primary" onclick="calculateAndPreview()" style="margin-bottom:10px">
+      <span>🧮</span> Calculate & Preview Invoice
+    </button>
+    <div class="btn-group">
+      <button class="btn btn-outline" onclick="clearForm()">🔄 Clear</button>
+      <button class="btn btn-outline" onclick="autofillLast()">⚡ Last Tenant</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+    <div>
+      <div style="font-family:'Playfair Display',serif; font-size:22px; font-weight:700">Invoice History</div>
+      <div style="font-size:12px; color:var(--text3); margin-top:2px">All generated invoices</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="clearHistory()" style="color:var(--danger); border-color:var(--danger)">🗑 Clear All</button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div class="page" id="page-settings">
+  <div style="font-family:'Playfair Display',serif; font-size:22px; font-weight:700; margin-bottom:4px">Settings</div>
+  <div style="font-size:12px; color:var(--text3); margin-bottom:20px">Customize your profile & preferences</div>
+
+  <div class="settings-section-title">Owner Profile</div>
+
+  <div class="card" style="padding:16px">
+    <!-- Logo Upload -->
+    <div class="form-group">
+      <label class="form-label">Business Logo</label>
+      <div class="logo-upload-area" onclick="document.getElementById('logoUpload').click()">
+        <img id="logoPreviewImg" class="logo-preview" style="display:none" src="" alt="Logo">
+        <div id="logoUploadPrompt">
+          <div style="font-size:32px; margin-bottom:8px">🏢</div>
+          <div style="font-size:13px; color:var(--text3)">Tap to upload logo</div>
+        </div>
+      </div>
+      <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="handleLogoUpload(event)">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Owner Name</label>
+      <input type="text" class="form-input" id="settingOwnerName" placeholder="e.g. Suresh Kumar">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Property Name</label>
+      <input type="text" class="form-input" id="settingProperty" placeholder="e.g. Shree Ram Residency">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Property Address</label>
+      <input type="text" class="form-input" id="settingAddress" placeholder="e.g. 12, MG Road, Bengaluru">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contact Number</label>
+      <input type="tel" class="form-input" id="settingPhone" placeholder="e.g. +91 98765 43210">
+    </div>
+  </div>
+
+  <div class="settings-section-title">Payment Settings</div>
+
+  <div class="card" style="padding:16px">
+    <div class="form-group">
+      <label class="form-label">UPI ID</label>
+      <input type="text" class="form-input" id="settingUpi" placeholder="e.g. name@paytm">
+    </div>
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">Default Rate per Unit (₹)</label>
+      <input type="number" class="form-input" id="settingRate" placeholder="e.g. 8" step="0.01">
+    </div>
+  </div>
+
+  <div class="settings-section-title">Appearance</div>
+  <div class="card" style="padding:16px">
+    <div style="display:flex; align-items:center; justify-content:space-between">
+      <div style="display:flex; align-items:center; gap:12px">
+        <span style="font-size:20px">🌙</span>
+        <div>
+          <div style="font-size:14px; font-weight:500">Dark Mode</div>
+          <div style="font-size:12px; color:var(--text3)">Easy on the eyes</div>
+        </div>
+      </div>
+      <div class="toggle" id="darkToggle" onclick="toggleDark()"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-accent" onclick="saveSettings()" style="margin-top:8px">
+    💾 Save Settings
+  </button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="showPage('home')">
+    <span class="nav-icon">🏠</span>
+    <span>Create</span>
+  </button>
+  <button class="nav-item" id="nav-history" onclick="showPage('history')">
+    <span class="nav-icon">📋</span>
+    <span>History</span>
+  </button>
+  <button class="nav-item" id="nav-settings" onclick="showPage('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<!-- INVOICE PREVIEW MODAL -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Invoice Preview</div>
+    <div id="invoicePreviewContainer"></div>
+    <div style="margin-top:20px">
+      <button class="btn btn-accent" onclick="generatePDF()" style="margin-bottom:10px" id="pdfBtn">
+        <span>📄</span> Download PDF
+      </button>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="openShareSheet('current')">📤 Share</button>
+        <button class="btn btn-primary" onclick="saveToHistory()">💾 Save</button>
+        <button class="btn btn-outline" onclick="closeModal('invoiceModal')">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY DETAIL MODAL -->
+<div class="modal-overlay" id="historyModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Invoice Details</div>
+    <div id="historyPreviewContainer"></div>
+    <div style="margin-top:20px">
+      <div class="btn-group">
+        <button class="btn btn-accent" onclick="redownloadPDF()">📄 Download</button>
+        <button class="btn btn-success" onclick="openShareSheet('history')">📤 Share</button>
+        <button class="btn btn-outline" onclick="closeModal('historyModal')">✕ Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE SHEET MODAL -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal" style="padding-bottom:32px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="margin-bottom:6px">Share Invoice</div>
+    <p style="font-size:13px;color:var(--text3);margin-bottom:20px">Choose how to send this invoice to your tenant</p>
+
+    <!-- WhatsApp -->
+    <button class="share-option-btn" id="shareWaBtn" onclick="shareViaWhatsApp()">
+      <span class="share-option-icon" style="background:#25D366">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><path d="M16 3C8.82 3 3 8.82 3 16c0 2.36.63 4.58 1.73 6.5L3 29l6.72-1.7A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3z" fill="#fff"/><path d="M21.9 19.2c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.8-1.49-1.78-1.66-2.08-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1-1.03 2.45s1.05 2.84 1.2 3.04c.15.2 2.07 3.16 5.01 4.43.7.3 1.25.48 1.67.61.7.22 1.34.19 1.84.12.56-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35z" fill="#25D366"/></svg>
+      </span>
+      <div class="share-option-text">
+        <div class="share-option-title">Send on WhatsApp</div>
+        <div class="share-option-sub">Opens WhatsApp with full invoice details</div>
+      </div>
+      <span class="share-option-arrow">›</span>
+    </button>
+
+    <!-- SMS -->
+    <button class="share-option-btn" onclick="shareViaSMS()">
+      <span class="share-option-icon" style="background:#3B82F6">💬</span>
+      <div class="share-option-text">
+        <div class="share-option-title">Send via SMS</div>
+        <div class="share-option-sub">Open default SMS app with invoice text</div>
+      </div>
+      <span class="share-option-arrow">›</span>
+    </button>
+
+    <!-- Copy Text -->
+    <button class="share-option-btn" onclick="copyInvoiceText()">
+      <span class="share-option-icon" style="background:#8B5CF6">📋</span>
+      <div class="share-option-text">
+        <div class="share-option-title">Copy Invoice Text</div>
+        <div class="share-option-sub">Copy formatted invoice to clipboard</div>
+      </div>
+      <span class="share-option-arrow">›</span>
+    </button>
+
+    <!-- Native Share / PDF File -->
+    <button class="share-option-btn" onclick="shareViaNative()" id="nativeShareBtn">
+      <span class="share-option-icon" style="background:#F59E0B">📎</span>
+      <div class="share-option-text">
+        <div class="share-option-title">Share PDF File</div>
+        <div class="share-option-sub">Sends actual PDF via any app (needs HTTPS / Chrome)</div>
+      </div>
+      <span class="share-option-arrow">›</span>
+    </button>
+
+    <button class="btn btn-outline" onclick="closeModal('shareModal')" style="margin-top:16px">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden QR container -->
+<div id="qr-hidden"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let currentInvoiceData = null;
+let currentHistoryItem = null;
+let darkMode = false;
+
+// ─── INIT ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  setDefaultMonth();
+  renderHistory();
+  updateWelcomeBanner();
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if(e.target === o) closeModal(o.id); });
+  });
+});
+
+function setDefaultMonth() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('billMonth').value = `${y}-${m}`;
+}
+
+// ─── DARK MODE ────────────────────────────────────────────
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
+  const toggle = document.getElementById('darkToggle');
+  toggle.classList.toggle('on', darkMode);
+  const s = getSettings(); s.darkMode = darkMode; saveSettingsObj(s);
+}
+
+// ─── PAGE NAV ─────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name === 'history') renderHistory();
+  if(name === 'home') updateWelcomeBanner();
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────
+function getSettings() {
+  try { return JSON.parse(localStorage.getItem('rm_settings')||'{}'); } catch{ return {}; }
+}
+function saveSettingsObj(obj) {
+  localStorage.setItem('rm_settings', JSON.stringify(obj));
+}
+function loadSettings() {
+  const s = getSettings();
+  if(s.ownerName) document.getElementById('settingOwnerName').value = s.ownerName;
+  if(s.property)  document.getElementById('settingProperty').value  = s.property;
+  if(s.address)   document.getElementById('settingAddress').value   = s.address;
+  if(s.phone)     document.getElementById('settingPhone').value     = s.phone;
+  if(s.upi)       document.getElementById('settingUpi').value       = s.upi;
+  if(s.rate)      document.getElementById('settingRate').value      = s.rate;
+  if(s.logo) {
+    document.getElementById('logoPreviewImg').src = s.logo;
+    document.getElementById('logoPreviewImg').style.display = 'block';
+    document.getElementById('logoUploadPrompt').style.display = 'none';
+  }
+  darkMode = s.darkMode || false;
+  document.body.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  document.getElementById('darkBtn').textContent = darkMode ? '☀️' : '🌙';
+  document.getElementById('darkToggle').classList.toggle('on', darkMode);
+
+  // Fill default rate
+  if(s.rate) document.getElementById('ratePerUnit').value = s.rate;
+}
+function saveSettings() {
+  const s = {
+    ownerName: document.getElementById('settingOwnerName').value.trim(),
+    property:  document.getElementById('settingProperty').value.trim(),
+    address:   document.getElementById('settingAddress').value.trim(),
+    phone:     document.getElementById('settingPhone').value.trim(),
+    upi:       document.getElementById('settingUpi').value.trim(),
+    rate:      document.getElementById('settingRate').value,
+    darkMode:  darkMode,
+    logo:      getSettings().logo || ''
+  };
+  saveSettingsObj(s);
+  // Always sync rate to the home form so it's never stale
+  if(s.rate) document.getElementById('ratePerUnit').value = s.rate;
+  showToast('✅ Settings saved!');
+  updateWelcomeBanner();
+}
+function handleLogoUpload(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const s = getSettings();
+    s.logo = ev.target.result;
+    saveSettingsObj(s);
+    document.getElementById('logoPreviewImg').src = ev.target.result;
+    document.getElementById('logoPreviewImg').style.display = 'block';
+    document.getElementById('logoUploadPrompt').style.display = 'none';
+    showToast('✅ Logo uploaded!');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── WELCOME BANNER ───────────────────────────────────────
+function updateWelcomeBanner() {
+  const s = getSettings();
+  document.getElementById('wbOwnerName').textContent = s.ownerName ? s.ownerName : 'Welcome Back';
+  const history = getHistory();
+  document.getElementById('wbInvoiceCount').textContent = history.length;
+  const now = new Date();
+  const thisMonth = history.filter(h => {
+    const d = new Date(h.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const total = thisMonth.reduce((a,b) => a + (b.total||0), 0);
+  document.getElementById('wbThisMonth').textContent = formatCurrency(total);
+}
+
+// ─── CALCULATION ──────────────────────────────────────────
+function autoCalc() {
+  const prev = parseFloat(document.getElementById('prevUnits').value)||0;
+  const curr = parseFloat(document.getElementById('currUnits').value)||0;
+  if(curr > prev) {
+    document.getElementById('unitsConsumed').value = (curr - prev).toFixed(0);
+  } else if(curr || prev) {
+    document.getElementById('unitsConsumed').value = '';
+  }
+  updateCalc();
+}
+function onManualUnits() { updateCalc(); }
+function updateCalc() {
+  const rent   = parseFloat(document.getElementById('roomRent').value)||0;
+  const units  = parseFloat(document.getElementById('unitsConsumed').value)||0;
+  const rate   = parseFloat(document.getElementById('ratePerUnit').value)||0;
+  const extra  = parseFloat(document.getElementById('extraCharges').value)||0;
+  const elec   = units * rate;
+  const total  = rent + elec + extra;
+
+  document.getElementById('calcResult').style.display = 'block';
+  document.getElementById('rRoomRent').textContent = formatCurrency(rent);
+  document.getElementById('rUnits').textContent = units;
+  document.getElementById('rRate').textContent = rate.toFixed(2);
+  document.getElementById('rElec').textContent = formatCurrency(elec);
+  document.getElementById('rTotal').textContent = formatCurrency(total);
+}
+
+// ─── FORMAT ───────────────────────────────────────────────
+function formatCurrency(v) {
+  return '₹' + Number(v).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+function formatMonth(ym) {
+  if(!ym) return '';
+  const [y,m] = ym.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(m)-1] + ' ' + y;
+}
+function formatDate(d) {
+  return new Date(d).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+}
+function invoiceNumber() {
+  const h = getHistory();
+  return 'INV-' + String(h.length + 1).padStart(4,'0');
+}
+
+// ─── QR CODE ──────────────────────────────────────────────
+function buildUpiString(upi, name, amount) {
+  const enc = encodeURIComponent;
+  return `upi://pay?pa=${enc(upi)}&pn=${enc(name)}&am=${amount}&cu=INR&tn=${enc('Rent Payment')}`;
+}
+
+async function generateQRDataURL(upiString) {
+  return new Promise(resolve => {
+    const container = document.getElementById('qr-hidden');
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    container.appendChild(div);
+    try {
+      new QRCode(div, {
+        text: upiString,
+        width: 180, height: 180,
+        colorDark: '#1A1A2E', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      // QRCode.js renders either a <canvas> (most browsers) or an <img> (IE fallback).
+      // Canvas is available immediately; img.src is a data-URI so it's also sync.
+      // We poll briefly to handle any async paint on slow devices.
+      let attempts = 0;
+      const tryGet = () => {
+        const canvas = div.querySelector('canvas');
+        if (canvas) { resolve(canvas.toDataURL('image/png')); return; }
+        const img = div.querySelector('img');
+        if (img && img.src && img.src.startsWith('data:')) { resolve(img.src); return; }
+        if (img && img.src) {
+          // src is a blob/object-url — wait for load
+          img.onload = () => resolve(img.src);
+          img.onerror = () => resolve('');
+          return;
+        }
+        attempts++;
+        if (attempts < 20) setTimeout(tryGet, 50); // poll up to 1 s
+        else resolve('');
+      };
+      setTimeout(tryGet, 50);
+    } catch(e) { resolve(''); }
+  });
+}
+
+// ─── PREVIEW ──────────────────────────────────────────────
+async function calculateAndPreview() {
+  const tName = document.getElementById('tenantName').value.trim();
+  if(!tName) { showToast('⚠️ Please enter tenant name'); return; }
+
+  const s = getSettings();
+  const rent   = parseFloat(document.getElementById('roomRent').value)||0;
+  const units  = parseFloat(document.getElementById('unitsConsumed').value)||0;
+  const rate   = parseFloat(document.getElementById('ratePerUnit').value)||0;
+  const extra  = parseFloat(document.getElementById('extraCharges').value)||0;
+  const elec   = units * rate;
+  const total  = rent + elec + extra;
+  const notes  = document.getElementById('invoiceNotes').value.trim();
+  const month  = document.getElementById('billMonth').value;
+  const prev   = parseFloat(document.getElementById('prevUnits').value)||0;
+  const curr   = parseFloat(document.getElementById('currUnits').value)||0;
+
+  const invNo = invoiceNumber();
+  const today = new Date().toISOString().split('T')[0];
+
+  currentInvoiceData = {
+    invNo, tenantName: tName,
+    month, date: today,
+    rent, units, rate, elec, extra, total, notes,
+    prevUnits: prev, currUnits: curr,
+    ownerName: s.ownerName||'Owner',
+    property:  s.property||'Property',
+    address:   s.address||'',
+    phone:     s.phone||'',
+    upi:       s.upi||'',
+    logo:      s.logo||''
+  };
+
+  // Generate QR
+  let qrDataUrl = '';
+  if(s.upi && total > 0) {
+    const upiStr = buildUpiString(s.upi, s.ownerName||'Owner', total.toFixed(2));
+    qrDataUrl = await generateQRDataURL(upiStr);
+  }
+  currentInvoiceData.qrDataUrl = qrDataUrl;
+
+  const html = buildInvoiceHTML(currentInvoiceData);
+  document.getElementById('invoicePreviewContainer').innerHTML = html;
+  openModal('invoiceModal');
+
+  updateCalc();
+}
+
+function buildInvoiceHTML(d) {
+  const elecRows = d.units > 0 ? `
+    <tr><td>⚡ Electricity (${d.units} units × ₹${d.rate}/unit)</td><td style="text-align:right">${formatCurrency(d.elec)}</td></tr>
+  ` : '';
+  const extraRow = d.extra > 0 ? `
+    <tr><td>🔧 Additional Charges${d.notes ? ' ('+d.notes+')' : ''}</td><td style="text-align:right">${formatCurrency(d.extra)}</td></tr>
+  ` : '';
+  const notesRow = (d.notes && d.extra === 0) ? `
+    <tr><td colspan="2" style="font-size:12px;color:#6B6B7A;padding:8px 12px;">📝 ${d.notes}</td></tr>
+  ` : '';
+  const meterRow = (d.prevUnits || d.currUnits) ? `
+    <tr><td colspan="2" style="font-size:11px;color:#9E9EAB;padding:6px 12px;">
+      Meter: Previous ${d.prevUnits} → Current ${d.currUnits} = ${d.units} units
+    </td></tr>
+  ` : '';
+  const qrSection = d.qrDataUrl ? `
+    <div class="inv-qr-section">
+      <div class="inv-qr-label">📱 Scan to Pay via UPI</div>
+      <div class="inv-qr-img"><img src="${d.qrDataUrl}" width="120" height="120" alt="UPI QR Code"></div>
+      <div class="inv-upi">${d.upi}</div>
+    </div>
+  ` : (d.upi ? `<div class="inv-qr-section"><div class="inv-upi" style="font-size:14px;font-weight:600">💳 UPI: ${d.upi}</div></div>` : '');
+
+  const logoSection = d.logo ? `<img src="${d.logo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;" alt="Logo">` : '';
+  const addressLine = d.address ? `<div style="font-size:12px;color:#9E9EAB;margin-top:4px">${d.address}</div>` : '';
+  const phoneLine = d.phone ? `<div style="font-size:12px;color:#9E9EAB">${d.phone}</div>` : '';
+
+  return `
+  <div class="invoice-preview">
+    <div class="inv-header">
+      ${logoSection}
+      <div class="inv-property">${d.property}</div>
+      <div class="inv-owner">${d.ownerName}${d.address||d.phone ? '<br>'+[d.address,d.phone].filter(Boolean).join(' | ') : ''}</div>
+      <div class="inv-badge">RENT INVOICE</div>
+    </div>
+
+    <div class="inv-meta">
+      <div>
+        <div style="font-size:11px;color:#9E9EAB;margin-bottom:2px">INVOICE NO.</div>
+        <strong>${d.invNo}</strong>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#9E9EAB;margin-bottom:2px">DATE</div>
+        <strong>${formatDate(d.date)}</strong>
+      </div>
+    </div>
+
+    <div style="background:#F0EFE9;border-radius:8px;padding:12px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:11px;color:#6B6B7A;margin-bottom:2px">TENANT</div>
+        <div style="font-size:16px;font-weight:700;color:#1A1A2E">${d.tenantName}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:#6B6B7A;margin-bottom:2px">BILLING PERIOD</div>
+        <div style="font-size:14px;font-weight:600;color:#1A1A2E">${formatMonth(d.month)||'—'}</div>
+      </div>
+    </div>
+
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align:right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>🏠 Room Rent</td>
+          <td style="text-align:right">${formatCurrency(d.rent)}</td>
+        </tr>
+        ${elecRows}
+        ${meterRow}
+        ${extraRow}
+        ${notesRow}
+        <tr class="inv-total-row">
+          <td style="font-size:15px">💰 Total Payable</td>
+          <td style="text-align:right;font-size:18px">${formatCurrency(d.total)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    ${qrSection}
+
+    <div class="inv-footer">
+      <div class="inv-thanks">Thank You! 🙏</div>
+      <div class="inv-sub">Please pay by the 5th of every month.<br>For queries contact ${d.phone||d.ownerName||'owner'}.</div>
+    </div>
+  </div>`;
+}
+
+// ─── PDF ──────────────────────────────────────────────────
+async function generatePDF(data) {
+  const btn = document.getElementById('pdfBtn');
+  if(btn) { btn.innerHTML='<span class="spinner"></span> Generating...'; btn.disabled=true; }
+
+  const d = data || currentInvoiceData;
+  if(!d) { showToast('No invoice data'); return; }
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const W = 210; const margin = 18;
+    let y = margin;
+
+    // Header background
+    pdf.setFillColor(26,26,46);
+    pdf.rect(0,0,W,50,'F');
+
+    // Gold accent bar
+    pdf.setFillColor(200,169,110);
+    pdf.rect(0,50,W,3,'F');
+
+    // Logo if available
+    if(d.logo) {
+      try { pdf.addImage(d.logo,'JPEG',margin,10,20,20,'','FAST'); } catch(e){}
+    }
+
+    // Property name
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(20);
+    pdf.setTextColor(240,239,233);
+    const propX = d.logo ? margin+26 : W/2;
+    const propAlign = d.logo ? 'left' : 'center';
+    pdf.text(d.property||'Property', propX, 22, {align: propAlign});
+
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(200,169,110);
+    const sub = [d.ownerName, d.address, d.phone].filter(Boolean).join('  |  ');
+    pdf.text(sub, propX, 30, {align: propAlign});
+
+    // INVOICE badge
+    pdf.setFillColor(200,169,110);
+    pdf.roundedRect(W/2-18,36,36,10,3,3,'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(26,26,46);
+    pdf.text('RENT INVOICE', W/2, 42.5, {align:'center'});
+
+    y = 62;
+
+    // Meta row
+    pdf.setFillColor(245,244,240);
+    pdf.rect(margin, y, W-2*margin, 22, 'F');
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(110,110,122);
+    pdf.text('INVOICE NO.', margin+6, y+7);
+    pdf.text('DATE', W/2+2, y+7);
+    pdf.text('BILLING PERIOD', W-margin-40, y+7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(26,26,46);
+    pdf.text(d.invNo, margin+6, y+16);
+    pdf.text(formatDate(d.date), W/2+2, y+16);
+    pdf.text(formatMonth(d.month)||'—', W-margin-40, y+16);
+    y += 28;
+
+    // Tenant block
+    pdf.setFillColor(240,239,233);
+    pdf.roundedRect(margin, y, W-2*margin, 20, 3, 3, 'F');
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(107,107,122);
+    pdf.text('TENANT NAME', margin+6, y+7);
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(13);
+    pdf.setTextColor(26,26,46);
+    pdf.text(d.tenantName, margin+6, y+16);
+    y += 26;
+
+    // Table header
+    pdf.setFillColor(26,26,46);
+    pdf.rect(margin, y, W-2*margin, 10, 'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(200,169,110);
+    pdf.text('DESCRIPTION', margin+6, y+7);
+    pdf.text('AMOUNT', W-margin-6, y+7, {align:'right'});
+    y += 10;
+
+    // Table rows
+    const rows = [];
+    rows.push(['🏠 Room Rent', formatCurrency(d.rent)]);
+    if(d.units > 0) rows.push([`⚡ Electricity (${d.units} units × ₹${d.rate}/unit)`, formatCurrency(d.elec)]);
+    if(d.prevUnits||d.currUnits) rows.push([`   Meter Reading: ${d.prevUnits} → ${d.currUnits}`, '']);
+    if(d.extra > 0) rows.push([`🔧 Additional Charges`, formatCurrency(d.extra)]);
+    if(d.notes && d.extra===0) rows.push([`📝 ${d.notes}`, '']);
+
+    rows.forEach((row,i) => {
+      if(i%2===0) { pdf.setFillColor(255,255,255); } else { pdf.setFillColor(249,248,244); }
+      pdf.rect(margin, y, W-2*margin, 10, 'F');
+      pdf.setFont('helvetica','normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(26,26,46);
+      if(row[0].startsWith('   ')) {
+        pdf.setTextColor(150,150,160);
+        pdf.setFontSize(8);
+      }
+      pdf.text(row[0].replace(/[🏠⚡🔧📝]/g,'').trim(), margin+6, y+7);
+      if(row[1]) pdf.text(row[1], W-margin-6, y+7, {align:'right'});
+      pdf.setDrawColor(226,224,216);
+      pdf.line(margin, y+10, W-margin, y+10);
+      y += 10;
+    });
+
+    // Total row
+    pdf.setFillColor(200,169,110);
+    pdf.rect(margin, y, W-2*margin, 13, 'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(26,26,46);
+    pdf.text('TOTAL PAYABLE', margin+6, y+9);
+    pdf.text(formatCurrency(d.total), W-margin-6, y+9, {align:'right'});
+    y += 20;
+
+    // QR + UPI — show section whenever UPI is set
+    if(d.upi) {
+      // Dashed separator
+      pdf.setDrawColor(200,169,110);
+      pdf.setLineDashPattern([3,3], 0);
+      pdf.line(margin, y, W-margin, y);
+      pdf.setLineDashPattern([], 0);
+      y += 8;
+
+      if(d.qrDataUrl) {
+        pdf.setFont('helvetica','normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(107,107,122);
+        pdf.text('Scan QR Code to Pay via UPI', W/2, y, {align:'center'});
+        y += 4;
+        try {
+          const qrSize = 40;
+          pdf.addImage(d.qrDataUrl, 'PNG', W/2-qrSize/2, y, qrSize, qrSize);
+          y += 44;
+        } catch(e){ y += 4; }
+      }
+
+      pdf.setFont('helvetica','bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(26,26,46);
+      pdf.text('UPI ID: ' + d.upi, W/2, y, {align:'center'});
+      y += 8;
+    }
+
+    // Footer
+    const footerY = 275;
+    pdf.setFillColor(26,26,46);
+    pdf.rect(0, footerY, W, 22, 'F');
+    pdf.setFont('helvetica','bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(200,169,110);
+    pdf.text('Thank You! 🙏', W/2, footerY+8, {align:'center'});
+    pdf.setFont('helvetica','normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(160,160,180);
+    pdf.text(`Please pay by the 5th of every month. Queries: ${d.phone||d.ownerName||''}`, W/2, footerY+15, {align:'center'});
+
+    pdf.save(`Invoice_${d.tenantName.replace(/\s+/g,'_')}_${d.month||d.date}.pdf`);
+    showToast('✅ PDF Downloaded!');
+  } catch(err) {
+    console.error(err);
+    showToast('❌ PDF generation failed');
+  }
+
+  if(btn) { btn.innerHTML='<span>📄</span> Download PDF'; btn.disabled=false; }
+}
+
+// ─── SHARE ────────────────────────────────────────────────
+// STRATEGY (3-tier):
+//
+// Tier 1 — PDF FILE share (best experience):
+//   navigator.canShare({files:[pdf]}) = true  →  Chrome Android over HTTPS
+//   Passes actual PDF to Android share intent → WhatsApp receives it as file
+//   REQUIRES: HTTPS context (not file://)
+//
+// Tier 2 — WhatsApp text via wa.me deep link:
+//   Works everywhere including local file:// and all browsers
+//   Opens WhatsApp with beautifully formatted invoice text
+//
+// Tier 3 — Copy / SMS / Native text share as last resort
+
+let _shareTarget = 'current';
+
+function openShareSheet(target) {
+  _shareTarget = target || 'current';
+  closeModal('invoiceModal');
+  closeModal('historyModal');
+  setTimeout(() => openModal('shareModal'), 220);
+}
+
+function getShareData() {
+  return _shareTarget === 'history' ? currentHistoryItem : currentInvoiceData;
+}
+
+// Build the jsPDF blob for the current invoice data (reuses generatePDF logic)
+async function buildPDFBlob(d) {
+  if (!d) return null;
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const W = 210, margin = 18;
+    let y = margin;
+
+    pdf.setFillColor(26,26,46);
+    pdf.rect(0,0,W,50,'F');
+    pdf.setFillColor(200,169,110);
+    pdf.rect(0,50,W,3,'F');
+
+    if (d.logo) { try { pdf.addImage(d.logo,'JPEG',margin,10,20,20,'','FAST'); } catch(e){} }
+
+    const propX = d.logo ? margin+26 : W/2;
+    const propAlign = d.logo ? 'left' : 'center';
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.setTextColor(240,239,233);
+    pdf.text(d.property||'Property', propX, 22, {align: propAlign});
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(200,169,110);
+    pdf.text([d.ownerName,d.address,d.phone].filter(Boolean).join('  |  '), propX, 30, {align: propAlign});
+
+    pdf.setFillColor(200,169,110); pdf.roundedRect(W/2-18,36,36,10,3,3,'F');
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(26,26,46);
+    pdf.text('RENT INVOICE', W/2, 42.5, {align:'center'});
+    y = 62;
+
+    pdf.setFillColor(245,244,240); pdf.rect(margin,y,W-2*margin,22,'F');
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(110,110,122);
+    pdf.text('INVOICE NO.', margin+6, y+7);
+    pdf.text('DATE', W/2+2, y+7);
+    pdf.text('BILLING PERIOD', W-margin-40, y+7);
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(26,26,46);
+    pdf.text(d.invNo, margin+6, y+16);
+    pdf.text(formatDate(d.date), W/2+2, y+16);
+    pdf.text(formatMonth(d.month)||'—', W-margin-40, y+16);
+    y += 28;
+
+    pdf.setFillColor(240,239,233); pdf.roundedRect(margin,y,W-2*margin,20,3,3,'F');
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(107,107,122);
+    pdf.text('TENANT NAME', margin+6, y+7);
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(26,26,46);
+    pdf.text(d.tenantName, margin+6, y+16);
+    y += 26;
+
+    pdf.setFillColor(26,26,46); pdf.rect(margin,y,W-2*margin,10,'F');
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(200,169,110);
+    pdf.text('DESCRIPTION', margin+6, y+7);
+    pdf.text('AMOUNT', W-margin-6, y+7, {align:'right'});
+    y += 10;
+
+    const rows = [['Room Rent', formatCurrency(d.rent)]];
+    if (d.units > 0) rows.push([`Electricity (${d.units} units x Rs.${d.rate}/unit)`, formatCurrency(d.elec)]);
+    if (d.prevUnits||d.currUnits) rows.push([`  Meter: ${d.prevUnits} to ${d.currUnits}`, '']);
+    if (d.extra > 0) rows.push(['Additional Charges', formatCurrency(d.extra)]);
+    if (d.notes && d.extra===0) rows.push([`Note: ${d.notes}`, '']);
+
+    rows.forEach((row,i) => {
+      pdf.setFillColor(i%2===0?255:249, i%2===0?255:248, i%2===0?255:244);
+      pdf.rect(margin,y,W-2*margin,10,'F');
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(26,26,46);
+      pdf.text(row[0], margin+6, y+7);
+      if (row[1]) pdf.text(row[1], W-margin-6, y+7, {align:'right'});
+      pdf.setDrawColor(226,224,216); pdf.line(margin,y+10,W-margin,y+10);
+      y += 10;
+    });
+
+    pdf.setFillColor(200,169,110); pdf.rect(margin,y,W-2*margin,13,'F');
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(26,26,46);
+    pdf.text('TOTAL PAYABLE', margin+6, y+9);
+    pdf.text(formatCurrency(d.total), W-margin-6, y+9, {align:'right'});
+    y += 20;
+
+    if (d.qrDataUrl) {
+      pdf.setDrawColor(200,169,110); pdf.setLineDashPattern([3,3],0);
+      pdf.line(margin,y,W-margin,y); pdf.setLineDashPattern([],0); y += 8;
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(107,107,122);
+      pdf.text('Scan QR Code to Pay via UPI', W/2, y, {align:'center'}); y += 4;
+      try { pdf.addImage(d.qrDataUrl,'PNG',W/2-20,y,40,40); } catch(e){}
+      y += 44;
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(26,26,46);
+      pdf.text('UPI ID: '+d.upi, W/2, y, {align:'center'}); y += 8;
+    }
+
+    const footerY = 275;
+    pdf.setFillColor(26,26,46); pdf.rect(0,footerY,W,22,'F');
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(200,169,110);
+    pdf.text('Thank You!', W/2, footerY+8, {align:'center'});
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(160,160,180);
+    pdf.text(`Please pay by 5th. Queries: ${d.phone||d.ownerName||''}`, W/2, footerY+15, {align:'center'});
+
+    return pdf.output('blob');
+  } catch(e) {
+    console.error('PDF build failed:', e);
+    return null;
+  }
+}
+
+// Builds WhatsApp-formatted text invoice
+function buildShareText(d) {
+  if (!d) return '';
+  const lines = [
+    '🏠 *RENT INVOICE*',
+    '━━━━━━━━━━━━━━━━━━━━',
+  ];
+  if (d.property)  lines.push(`🏢 *${d.property}*`);
+  if (d.ownerName) lines.push(`👤 Owner: ${d.ownerName}`);
+  if (d.phone)     lines.push(`📞 ${d.phone}`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`📋 Invoice: ${d.invNo}`);
+  lines.push(`📅 Date: ${formatDate(d.date)}`);
+  if (d.month) lines.push(`🗓 Period: ${formatMonth(d.month)}`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`👤 Tenant: *${d.tenantName}*`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`🏠 Room Rent: *${formatCurrency(d.rent)}*`);
+  if (d.units > 0) {
+    lines.push(`⚡ Electricity: ${d.units} units × ₹${d.rate} = *${formatCurrency(d.elec)}*`);
+    if (d.prevUnits || d.currUnits)
+      lines.push(`   Meter: ${d.prevUnits} → ${d.currUnits}`);
+  }
+  if (d.extra > 0) lines.push(`🔧 Extra: *${formatCurrency(d.extra)}*`);
+  if (d.notes && d.extra === 0) lines.push(`📝 ${d.notes}`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  lines.push(`💰 *TOTAL: ${formatCurrency(d.total)}*`);
+  lines.push('━━━━━━━━━━━━━━━━━━━━');
+  if (d.upi) lines.push(`💳 UPI: *${d.upi}*`);
+  lines.push('');
+  lines.push('🙏 Please pay by 5th of the month. Thank you!');
+  return lines.join('\n');
+}
+
+// ── TIER 1: Share actual PDF file (Chrome Android + HTTPS only) ──
+async function shareViaPDFFile(d) {
+  const blob = await buildPDFBlob(d);
+  if (!blob) return false;
+  const fileName = `Invoice_${(d.tenantName||'Tenant').replace(/\s+/g,'_')}_${d.month||d.date}.pdf`;
+  const file = new File([blob], fileName, { type: 'application/pdf' });
+
+  // canShare({files}) needs HTTPS — will be undefined/false on file://
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: `Rent Invoice — ${d.tenantName}`,
+        text: `Invoice ${d.invNo} for ${formatMonth(d.month)||d.date}`
+      });
+      showToast('✅ PDF shared!');
+      return true;
+    } catch (e) {
+      if (e.name === 'AbortError') return true; // user cancelled — not an error
+      // Fall through to text share
+      console.warn('PDF file share failed, falling back:', e.message);
+      return false;
+    }
+  }
+  return false; // canShare not available
+}
+
+// ── TIER 2: WhatsApp text via wa.me (works everywhere) ──
+function shareViaWhatsApp() {
+  const d = getShareData();
+  if (!d) { showToast('No invoice data'); return; }
+  const text = buildShareText(d);
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  // location.href on mobile opens WhatsApp app directly without popup blocker
+  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  if (isMobile) { window.location.href = url; }
+  else { window.open(url, '_blank'); }
+  closeModal('shareModal');
+  showToast('✅ Opening WhatsApp...');
+}
+
+// ── TIER 3a: SMS ──
+function shareViaSMS() {
+  const d = getShareData();
+  if (!d) return;
+  window.location.href = 'sms:?body=' + encodeURIComponent(buildShareText(d));
+  closeModal('shareModal');
+}
+
+// ── TIER 3b: Copy to clipboard ──
+async function copyInvoiceText() {
+  const d = getShareData();
+  if (!d) return;
+  const text = buildShareText(d);
+  let ok = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(text); ok = true; } catch(e) {}
+  }
+  if (!ok) {
+    // Legacy fallback (older Android WebView, Samsung Browser)
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select(); ta.setSelectionRange(0, 99999);
+    try { ok = document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+  showToast(ok ? '✅ Copied! Paste in WhatsApp.' : '❌ Copy failed');
+  closeModal('shareModal');
+}
+
+// ── TIER 3c: Native Web Share API (text — no file) ──
+async function shareViaNative() {
+  const d = getShareData();
+  if (!d) return;
+
+  // First try PDF file share (works on Chrome Android + HTTPS)
+  showToast('⏳ Preparing...');
+  const pdfShared = await shareViaPDFFile(d);
+  if (pdfShared) { closeModal('shareModal'); return; }
+
+  // Fall back to text share
+  if (typeof navigator.share !== 'function') {
+    showToast('Not supported — use WhatsApp button instead');
+    return;
+  }
+  try {
+    await navigator.share({
+      title: `Rent Invoice — ${d.tenantName}`,
+      text: buildShareText(d)
+    });
+    showToast('✅ Shared!');
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Share failed — try WhatsApp');
+  }
+  closeModal('shareModal');
+}
+
+// ─── HISTORY ──────────────────────────────────────────────
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('rm_history')||'[]'); } catch{ return []; }
+}
+function saveHistory(h) { localStorage.setItem('rm_history', JSON.stringify(h)); }
+
+function saveToHistory() {
+  if(!currentInvoiceData) return;
+  const h = getHistory();
+  const idx = h.findIndex(x => x.invNo === currentInvoiceData.invNo);
+  if(idx >= 0) { h[idx] = {...currentInvoiceData}; } else { h.unshift({...currentInvoiceData}); }
+  saveHistory(h);
+  closeModal('invoiceModal');
+  showToast('✅ Invoice saved!');
+  updateWelcomeBanner();
+}
+
+function renderHistory() {
+  const h = getHistory();
+  const container = document.getElementById('historyList');
+  if(!h.length) {
+    container.innerHTML = `<div class="history-empty">
+      <div class="empty-icon">📋</div>
+      <p>No invoices yet.<br>Create your first invoice from the home tab.</p>
+    </div>`;
+    return;
+  }
+  container.innerHTML = h.map(item => `
+    <div class="history-item" onclick="viewHistory('${item.invNo}')">
+      <div>
+        <div class="history-name">${item.tenantName}</div>
+        <div class="history-date">${item.invNo} · ${formatDate(item.date)} · ${formatMonth(item.month)||''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="history-amount">${formatCurrency(item.total)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">View ›</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function viewHistory(invNo) {
+  const h = getHistory();
+  const item = h.find(x => x.invNo === invNo);
+  if(!item) return;
+  currentHistoryItem = item;
+  document.getElementById('historyPreviewContainer').innerHTML = buildInvoiceHTML(item);
+  openModal('historyModal');
+}
+
+function redownloadPDF() { generatePDF(currentHistoryItem); }
+
+function clearHistory() {
+  if(!confirm('Clear all invoice history?')) return;
+  saveHistory([]);
+  renderHistory();
+  updateWelcomeBanner();
+  showToast('🗑 History cleared');
+}
+
+// ─── FORM ─────────────────────────────────────────────────
+function clearForm() {
+  ['tenantName','roomRent','prevUnits','currUnits','unitsConsumed','ratePerUnit','extraCharges','invoiceNotes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  setDefaultMonth();
+  const s = getSettings();
+  if(s.rate) document.getElementById('ratePerUnit').value = s.rate;
+  document.getElementById('calcResult').style.display = 'none';
+}
+
+function autofillLast() {
+  const h = getHistory();
+  if(!h.length) { showToast('No previous invoice found'); return; }
+  const last = h[0];
+  document.getElementById('tenantName').value = last.tenantName||'';
+  document.getElementById('roomRent').value   = last.rent||'';
+  document.getElementById('prevUnits').value  = last.currUnits||'';
+  // Rate is always kept from Settings — never overwritten by history
+  showToast(`⚡ Filled from last invoice`);
+  updateCalc();
+}
+
+// ─── MODAL ────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── TOAST ────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// Auto-update calc when room rent changes
+document.addEventListener('DOMContentLoaded', () => {
+  ['roomRent','extraCharges'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateCalc);
+  });
+
+  // Guard: if user clears the rate field, restore from settings on blur
+  document.getElementById('ratePerUnit').addEventListener('blur', () => {
+    const field = document.getElementById('ratePerUnit');
+    if(!field.value) {
+      const s = getSettings();
+      if(s.rate) { field.value = s.rate; updateCalc(); }
+    }
+  });
+});
+</script>
+</body>
+</html>
